@@ -1,5 +1,11 @@
-#ifndef OBDC_ELM_DEVICE_H_
-#define OBDC_ELM_DEVICE_H_
+/**
+ ******************************************************************************
+ * OBD-C : CAN BUS Research Project                                           *
+ ******************************************************************************
+ * Copyright 2019 Justin Moore. All rights reserved.                          *
+ ******************************************************************************
+ */
+#pragma once
 
 class ELMDevice {
  public:
@@ -9,5 +15,3 @@ class ELMDevice {
  private:
 
 };
-
-#endif  // OBDC_ELM_DEVICE_H_
