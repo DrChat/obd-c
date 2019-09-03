@@ -56,10 +56,13 @@ class FakeELM327 : public FakeTransportDevice {
 
   struct DispatchEntry {
     Parameter parm;  // Parameter, used for reusable functions (e.g. boolean)
-    std::function<void(FakeELM327* elm, const std::string& cmd, Parameter par)>
-        fn;
+    std::function<void(FakeELM327* elm, const std::string& cmd, Parameter par)> fn;
   };
   static const std::map<std::string, DispatchEntry> dispatch_table;
+
+ private:
+  // Member variables
+  std::string last_command_;
 
  private:
   // Member functions
@@ -67,6 +70,7 @@ class FakeELM327 : public FakeTransportDevice {
   bool GetParamValueBool(Parameter param);
 
  private:
+  void OnSetIgnoreOK(const std::string& cmd, Parameter param);
   void OnSetValueTrue(const std::string& cmd, Parameter param);
   void OnSetValueFalse(const std::string& cmd, Parameter param);
 

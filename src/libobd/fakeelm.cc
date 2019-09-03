@@ -14,18 +14,21 @@ const static std::string MESSAGE_OK = "OK";
 const static std::string MESSAGE_ERR = "?";
 
 // This is the dispatch table for commands prefixed with "AT".
-const std::map<std::string, FakeELM327::DispatchEntry>
-    FakeELM327::dispatch_table = {
-        // Boolean parameters
-        {"E0", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
-        {"E1", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
-        {"L0", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
-        {"L1", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
+const std::map<std::string, FakeELM327::DispatchEntry> FakeELM327::dispatch_table = {
+    // Ignored commands
+    {"AL", {PAR_INVALID, std::mem_fn(&FakeELM327::OnSetIgnoreOK)}},
 
-        // Commands
-        {"SP", {PAR_INVALID, std::mem_fn(&FakeELM327::OnSetProtocol)}},
-        {"I", {PAR_INVALID, std::mem_fn(&FakeELM327::OnInfo)}},
-        {"Z", {PAR_INVALID, std::mem_fn(&FakeELM327::OnReset)}},
+    // Boolean parameters
+    {"E0", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
+    {"E1", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
+    {"L0", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
+    {"L1", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
+
+    // Commands
+    {"D", {PAR_INVALID, std::mem_fn(&FakeELM327::OnReset)}},
+    {"I", {PAR_INVALID, std::mem_fn(&FakeELM327::OnInfo)}},
+    {"SP", {PAR_INVALID, std::mem_fn(&FakeELM327::OnSetProtocol)}},
+    {"Z", {PAR_INVALID, std::mem_fn(&FakeELM327::OnReset)}},
 };
 
 const FakeELM327::ParameterValue FakeELM327::default_params[PAR_MAX] = {
@@ -44,6 +47,12 @@ void FakeELM327::OnConnected() { Send(">"); }
 void FakeELM327::OnReceive(const uint8_t* buf, size_t len) {
   if (GetParamValueBool(PAR_ECHO)) {
     Send(buf, len);
+  }
+
+  // Repeat last command
+  if (len >= 1 && (buf[0] == '\r' || buf[0] == '\n')) {
+    buf = (const uint8_t*)last_command_.c_str();
+    len = last_command_.length();
   }
 
   // Check for an AT command.
@@ -91,9 +100,7 @@ void FakeELM327::SendReply(const std::string& reply) {
   Send((const uint8_t*)data.c_str(), data.length());
 }
 
-void FakeELM327::SetDefaultParameters() {
-  std::memcpy(params_, default_params, sizeof(default_params));
-}
+void FakeELM327::SetDefaultParameters() { std::memcpy(params_, default_params, sizeof(default_params)); }
 
 bool FakeELM327::GetParamValueBool(Parameter param) {
   assert(param < PAR_MAX);
@@ -102,12 +109,19 @@ bool FakeELM327::GetParamValueBool(Parameter param) {
   return params_[param].bval;
 }
 
+void FakeELM327::OnSetIgnoreOK(const std::string& cmd, Parameter param) {
+  (void)cmd;
+  (void)param;
+  SendReply(MESSAGE_OK);
+}
+
 void FakeELM327::OnSetValueTrue(const std::string& cmd, Parameter param) {
   (void)cmd;
   assert(param < PAR_MAX);
   assert(params_[param].type == PARTYPE_BOOL);
 
   params_[param].bval = true;
+  SendReply(MESSAGE_OK);
 }
 
 void FakeELM327::OnSetValueFalse(const std::string& cmd, Parameter param) {
@@ -116,6 +130,7 @@ void FakeELM327::OnSetValueFalse(const std::string& cmd, Parameter param) {
   assert(params_[param].type == PARTYPE_BOOL);
 
   params_[param].bval = false;
+  SendReply(MESSAGE_OK);
 }
 
 void FakeELM327::OnSetProtocol(const std::string& cmd, Parameter param) {
