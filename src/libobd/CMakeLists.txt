@@ -2,6 +2,9 @@ set(libobd_SOURCES
     "elm_device.cc"
     "elm_device.h"
     "scanner.h"
+
+    "fakeelm.cc"
+    "fakeelm.h"
 )
 
 if (WIN32)
