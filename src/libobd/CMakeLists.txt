@@ -3,6 +3,8 @@ set(libobd_SOURCES
     "elm_device.h"
     "scanner.h"
 
+    "faketransport.cc"
+    "faketransport.h"
     "fakeelm.cc"
     "fakeelm.h"
 )

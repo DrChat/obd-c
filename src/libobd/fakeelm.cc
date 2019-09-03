@@ -62,14 +62,19 @@ void FakeELM327::OnReceive(const uint8_t* buf, size_t len) {
 }
 
 void FakeELM327::SendReply(const std::string& reply) {
-  // TODO: Blah, this will send things, with or without '\r\n'
-  (void)reply;
+  std::string data;
+  data.reserve(reply.length() + 2);
+  data = reply;
 
   if (GetParamValueBool(PAR_LINEFEED)) {
     // Send string with '\r\n'
+    data += "\r\n";
   } else {
     // Send string with '\r'
+    data += "\r\n";
   }
+
+  Send((const uint8_t*)data.c_str(), data.length());
 }
 
 void FakeELM327::SetDefaultParameters() {

@@ -13,10 +13,12 @@
 #include <string>
 #include <vector>
 
+#include "faketransport.h"
+
 /**
  * \brief Fake ELM327 device. This connects to the end of a fake transport.
  */
-class FakeELM327 {
+class FakeELM327 : public FakeTransportDevice {
  public:
   FakeELM327();
 
