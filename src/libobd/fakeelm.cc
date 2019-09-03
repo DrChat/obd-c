@@ -10,10 +10,15 @@
 #include <cassert>
 #include <functional>
 
+const static std::string MESSAGE_OK = "OK";
+const static std::string MESSAGE_ERR = "?";
+
 // This is the dispatch table for commands prefixed with "AT".
 const std::map<std::string, FakeELM327::DispatchEntry>
     FakeELM327::dispatch_table = {
         // Boolean parameters
+        {"E0", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
+        {"E1", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
         {"L0", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
         {"L1", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
 
@@ -26,6 +31,7 @@ const std::map<std::string, FakeELM327::DispatchEntry>
 const FakeELM327::ParameterValue FakeELM327::default_params[PAR_MAX] = {
     /* PAR_INVALID  */ {PARTYPE_INVALID, false},
     /* PAR_LINEFEED */ {PARTYPE_BOOL, true},
+    /* PAR_ECHO     */ {PARTYPE_BOOL, true},
 };
 
 FakeELM327::FakeELM327() {
@@ -33,7 +39,13 @@ FakeELM327::FakeELM327() {
   SetDefaultParameters();
 }
 
+void FakeELM327::OnConnected() { Send(">"); }
+
 void FakeELM327::OnReceive(const uint8_t* buf, size_t len) {
+  if (GetParamValueBool(PAR_ECHO)) {
+    Send(buf, len);
+  }
+
   // Check for an AT command.
   if (len > 2 && buf[0] == 'A' && buf[1] == 'T') {
     // Parse the buffer into plaintext. Fail if it is not ASCII.
@@ -46,7 +58,7 @@ void FakeELM327::OnReceive(const uint8_t* buf, size_t len) {
         break;
       else {
         // Invalid string.
-        SendReply("?");
+        SendReply(MESSAGE_ERR);
         return;
       }
     }
@@ -55,10 +67,12 @@ void FakeELM327::OnReceive(const uint8_t* buf, size_t len) {
     auto it = dispatch_table.find(s);
     if (it != dispatch_table.end()) {
       it->second.fn(this, s, it->second.parm);
+    } else {
+      SendReply(MESSAGE_ERR);
     }
   }
 
-  // Send '>'
+  Send(">");
 }
 
 void FakeELM327::SendReply(const std::string& reply) {
@@ -71,7 +85,7 @@ void FakeELM327::SendReply(const std::string& reply) {
     data += "\r\n";
   } else {
     // Send string with '\r'
-    data += "\r\n";
+    data += "\r";
   }
 
   Send((const uint8_t*)data.c_str(), data.length());
@@ -118,4 +132,6 @@ void FakeELM327::OnInfo(const std::string& cmd, Parameter param) {
 void FakeELM327::OnReset(const std::string& cmd, Parameter param) {
   (void)cmd;
   (void)param;
+  SetDefaultParameters();
+  SendReply(MESSAGE_OK);
 }

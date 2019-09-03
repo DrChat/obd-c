@@ -11,9 +11,15 @@ void FakeTransportDevice::Send(const uint8_t* data, size_t len) {
   transport_->OnReceive(data, len);
 }
 
+void FakeTransportDevice::Send(const std::string& data) {
+  transport_->OnReceive((const uint8_t*)data.c_str(), data.length());
+}
+
 void FakeTransport::Connect(FakeTransportDevice* dev) {
   dev_ = dev;
   dev->transport_ = this;
+
+  dev->OnConnected();
 }
 
 void FakeTransport::Send(const uint8_t* data, size_t len) {

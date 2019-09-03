@@ -15,8 +15,10 @@ class FakeTransport;
 
 class FakeTransportDevice {
  public:
+  virtual void OnConnected() {}
   virtual void OnReceive(const uint8_t* data, size_t len) = 0;
   void Send(const uint8_t* data, size_t len);
+  void Send(const std::string& data);
 
  private:
   friend class FakeTransport;

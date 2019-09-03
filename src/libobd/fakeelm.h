@@ -22,7 +22,8 @@ class FakeELM327 : public FakeTransportDevice {
  public:
   FakeELM327();
 
-  void OnReceive(const uint8_t* buf, size_t len);
+  void OnConnected() override;
+  void OnReceive(const uint8_t* buf, size_t len) override;
   void SendReply(const std::string& reply);
 
  private:
@@ -32,6 +33,7 @@ class FakeELM327 : public FakeTransportDevice {
   enum Parameter {
     PAR_INVALID,
     PAR_LINEFEED,  // '\n' following '\r'
+    PAR_ECHO,      // Echo sent command
     PAR_MAX,
   };
 
