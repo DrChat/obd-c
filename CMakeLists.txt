@@ -5,8 +5,8 @@ project(obd-c
 )
 
 if (MSVC)
-    string(REGEX REPLACE " ?/W[0-4] ?" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    string(REGEX REPLACE " ?/W[0-4] ?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REGEX REPLACE " ?/W[0-4] ?" " " CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REGEX REPLACE " ?/W[0-4] ?" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
     add_compile_options(
         /MP  # Multiprocessor compilation
