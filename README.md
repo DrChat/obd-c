@@ -1,6 +1,6 @@
 # OBD2 scan tool library
 
-![Layout](docs/images/layout.png?raw=true)
+![Layout](docs/images/layout.svg)
 
 * Bluetooth Component
   * Communicates with OS bluetooth and passes messages
