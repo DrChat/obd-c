@@ -19,10 +19,8 @@ const std::map<std::string, FakeELM327::DispatchEntry> FakeELM327::dispatch_tabl
     {"AL", {PAR_INVALID, std::mem_fn(&FakeELM327::OnSetIgnoreOK)}},
 
     // Boolean parameters
-    {"E0", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
-    {"E1", {PAR_ECHO, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
-    {"L0", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueFalse)}},
-    {"L1", {PAR_LINEFEED, std::mem_fn(&FakeELM327::OnSetValueTrue)}},
+    {"E", {PAR_ECHO, 1, 1, std::mem_fn(&FakeELM327::OnSetBoolean)}},
+    {"L", {PAR_LINEFEED, 1, 1, std::mem_fn(&FakeELM327::OnSetBoolean)}},
 
     // Commands
     {"D", {PAR_INVALID, std::mem_fn(&FakeELM327::OnReset)}},
@@ -73,10 +71,7 @@ void FakeELM327::OnReceive(const uint8_t* buf, size_t len) {
     }
 
     // Dispatch the command.
-    auto it = dispatch_table.find(s);
-    if (it != dispatch_table.end()) {
-      it->second.fn(this, s, it->second.parm);
-    } else {
+    if (!DispatchCommand(s)) {
       SendReply(MESSAGE_ERR);
     }
   }
@@ -109,43 +104,79 @@ bool FakeELM327::GetParamValueBool(Parameter param) {
   return params_[param].bval;
 }
 
-void FakeELM327::OnSetIgnoreOK(const std::string& cmd, Parameter param) {
-  (void)cmd;
+bool FakeELM327::DispatchCommand(const std::string& cmd) {
+  std::string param;
+  auto it = dispatch_table.begin();
+
+  // Search for the command.
+  do {
+    // Exact match.
+    it = dispatch_table.find(cmd);
+    if (it != dispatch_table.end()) {
+      param = "";
+      break;
+    }
+
+    // 4 to 3-character commands.
+    for (size_t i = 2; i >= 1; i--) {
+      it = dispatch_table.find(cmd.substr(0, i));
+      if (it != dispatch_table.end()) {
+        param = cmd.substr(i);
+        break;
+      }
+    }
+
+    if (it != dispatch_table.end()) break;
+  } while (0);
+
+  if (it != dispatch_table.end()) {
+    it->second.fn(this, param, it->second.parm);
+    return true;
+  }
+
+  return false;
+}
+
+void FakeELM327::OnSetIgnoreOK(const std::string& arg, Parameter param) {
+  (void)arg;
   (void)param;
   SendReply(MESSAGE_OK);
 }
 
-void FakeELM327::OnSetValueTrue(const std::string& cmd, Parameter param) {
-  (void)cmd;
+void FakeELM327::OnSetBoolean(const std::string& arg, Parameter param) {
+  (void)arg;
   assert(param < PAR_MAX);
   assert(params_[param].type == PARTYPE_BOOL);
 
-  params_[param].bval = true;
-  SendReply(MESSAGE_OK);
+  if (arg == "1")
+  {
+	  params_[param].bval = true;
+	  SendReply(MESSAGE_OK);
+	  return;
+  }
+  else if (arg == "0")
+  {
+	  params_[param].bval = false;
+	  SendReply(MESSAGE_OK);
+	  return;
+  }
+
+  SendReply(MESSAGE_ERR);
 }
 
-void FakeELM327::OnSetValueFalse(const std::string& cmd, Parameter param) {
-  (void)cmd;
-  assert(param < PAR_MAX);
-  assert(params_[param].type == PARTYPE_BOOL);
-
-  params_[param].bval = false;
-  SendReply(MESSAGE_OK);
-}
-
-void FakeELM327::OnSetProtocol(const std::string& cmd, Parameter param) {
-  (void)cmd;
+void FakeELM327::OnSetProtocol(const std::string& arg, Parameter param) {
+  (void)arg;
   (void)param;
 }
 
-void FakeELM327::OnInfo(const std::string& cmd, Parameter param) {
-  (void)cmd;
+void FakeELM327::OnInfo(const std::string& arg, Parameter param) {
+  (void)arg;
   (void)param;
   SendReply("ELM327 v2.1");
 }
 
-void FakeELM327::OnReset(const std::string& cmd, Parameter param) {
-  (void)cmd;
+void FakeELM327::OnReset(const std::string& arg, Parameter param) {
+  (void)arg;
   (void)param;
   SetDefaultParameters();
   SendReply(MESSAGE_OK);

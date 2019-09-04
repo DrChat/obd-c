@@ -54,9 +54,17 @@ class FakeELM327 : public FakeTransportDevice {
   static const ParameterValue default_params[PAR_MAX];
   ParameterValue params_[PAR_MAX];
 
+  using dispatch_fn = std::function<void(FakeELM327*, const std::string&, Parameter)>;
+
   struct DispatchEntry {
+    DispatchEntry(Parameter param, dispatch_fn fn) : parm(param), fn(fn), min_param(0), max_param(0) {}
+    DispatchEntry(Parameter param, uint32_t min_param, uint32_t max_param, dispatch_fn fn)
+        : parm(param), fn(fn), min_param(min_param), max_param(max_param) {}
+
     Parameter parm;  // Parameter, used for reusable functions (e.g. boolean)
-    std::function<void(FakeELM327* elm, const std::string& cmd, Parameter par)> fn;
+    uint32_t min_param;
+    uint32_t max_param;
+    dispatch_fn fn;
   };
   static const std::map<std::string, DispatchEntry> dispatch_table;
 
@@ -69,13 +77,14 @@ class FakeELM327 : public FakeTransportDevice {
   void SetDefaultParameters();
   bool GetParamValueBool(Parameter param);
 
+  bool DispatchCommand(const std::string& cmd); // Dispatch a command. Returns false if it was not found.
+
  private:
-  void OnSetIgnoreOK(const std::string& cmd, Parameter param);
-  void OnSetValueTrue(const std::string& cmd, Parameter param);
-  void OnSetValueFalse(const std::string& cmd, Parameter param);
+  void OnSetIgnoreOK(const std::string& arg, Parameter param);
+  void OnSetBoolean(const std::string& arg, Parameter param);
 
   // Commands
-  void OnSetProtocol(const std::string& cmd, Parameter param);
-  void OnInfo(const std::string& cmd, Parameter param);
-  void OnReset(const std::string& cmd, Parameter param);
+  void OnSetProtocol(const std::string& arg, Parameter param);
+  void OnInfo(const std::string& arg, Parameter param);
+  void OnReset(const std::string& arg, Parameter param);
 };
