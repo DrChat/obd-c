@@ -57,9 +57,14 @@ class FakeELM327 : public FakeTransportDevice {
   using dispatch_fn = std::function<void(FakeELM327*, const std::string&, Parameter)>;
 
   struct DispatchEntry {
-    DispatchEntry(Parameter param, dispatch_fn fn) : parm(param), fn(fn), min_param(0), max_param(0) {}
-    DispatchEntry(Parameter param, uint32_t min_param, uint32_t max_param, dispatch_fn fn)
-        : parm(param), fn(fn), min_param(min_param), max_param(max_param) {}
+    // Constructor for no-parameter commands.
+    DispatchEntry(Parameter param, void (FakeELM327::*fn)(const std::string&, Parameter))
+        : parm(param), fn(std::mem_fn(fn)), min_param(0), max_param(0) {}
+
+	// Constructor with min_param and max_param (for commands that take parameters)
+    DispatchEntry(Parameter param, uint32_t min_param, uint32_t max_param,
+                  void (FakeELM327::*fn)(const std::string&, Parameter))
+        : parm(param), fn(std::mem_fn(fn)), min_param(min_param), max_param(max_param) {}
 
     Parameter parm;  // Parameter, used for reusable functions (e.g. boolean)
     uint32_t min_param;
@@ -77,13 +82,14 @@ class FakeELM327 : public FakeTransportDevice {
   void SetDefaultParameters();
   bool GetParamValueBool(Parameter param);
 
-  bool DispatchCommand(const std::string& cmd); // Dispatch a command. Returns false if it was not found.
+  bool DispatchCommand(const std::string& cmd);  // Dispatch a command. Returns false if it was not found.
 
  private:
   void OnSetIgnoreOK(const std::string& arg, Parameter param);
   void OnSetBoolean(const std::string& arg, Parameter param);
 
   // Commands
+  void OnDisplayDeviceDesc(const std::string& arg, Parameter param);
   void OnSetProtocol(const std::string& arg, Parameter param);
   void OnInfo(const std::string& arg, Parameter param);
   void OnReset(const std::string& arg, Parameter param);

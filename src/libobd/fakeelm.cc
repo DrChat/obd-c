@@ -16,17 +16,18 @@ const static std::string MESSAGE_ERR = "?";
 // This is the dispatch table for commands prefixed with "AT".
 const std::map<std::string, FakeELM327::DispatchEntry> FakeELM327::dispatch_table = {
     // Ignored commands
-    {"AL", {PAR_INVALID, std::mem_fn(&FakeELM327::OnSetIgnoreOK)}},
+    {"AL", {PAR_INVALID, &FakeELM327::OnSetIgnoreOK}},
 
     // Boolean parameters
-    {"E", {PAR_ECHO, 1, 1, std::mem_fn(&FakeELM327::OnSetBoolean)}},
-    {"L", {PAR_LINEFEED, 1, 1, std::mem_fn(&FakeELM327::OnSetBoolean)}},
+    {"E", {PAR_ECHO, 1, 1, &FakeELM327::OnSetBoolean}},
+    {"L", {PAR_LINEFEED, 1, 1, &FakeELM327::OnSetBoolean}},
 
     // Commands
-    {"D", {PAR_INVALID, std::mem_fn(&FakeELM327::OnReset)}},
-    {"I", {PAR_INVALID, std::mem_fn(&FakeELM327::OnInfo)}},
-    {"SP", {PAR_INVALID, std::mem_fn(&FakeELM327::OnSetProtocol)}},
-    {"Z", {PAR_INVALID, std::mem_fn(&FakeELM327::OnReset)}},
+    {"@1", {PAR_INVALID, &FakeELM327::OnDisplayDeviceDesc}},
+    {"D", {PAR_INVALID, &FakeELM327::OnReset}},
+    {"I", {PAR_INVALID, &FakeELM327::OnInfo}},
+    {"SP", {PAR_INVALID, &FakeELM327::OnSetProtocol}},
+    {"Z", {PAR_INVALID, &FakeELM327::OnReset}},
 };
 
 const FakeELM327::ParameterValue FakeELM327::default_params[PAR_MAX] = {
@@ -148,25 +149,29 @@ void FakeELM327::OnSetBoolean(const std::string& arg, Parameter param) {
   assert(param < PAR_MAX);
   assert(params_[param].type == PARTYPE_BOOL);
 
-  if (arg == "1")
-  {
-	  params_[param].bval = true;
-	  SendReply(MESSAGE_OK);
-	  return;
-  }
-  else if (arg == "0")
-  {
-	  params_[param].bval = false;
-	  SendReply(MESSAGE_OK);
-	  return;
+  if (arg == "1") {
+    params_[param].bval = true;
+    SendReply(MESSAGE_OK);
+    return;
+  } else if (arg == "0") {
+    params_[param].bval = false;
+    SendReply(MESSAGE_OK);
+    return;
   }
 
   SendReply(MESSAGE_ERR);
 }
 
+void FakeELM327::OnDisplayDeviceDesc(const std::string& arg, Parameter param) {
+  (void)arg;
+  (void)param;
+  SendReply("Fake OBDII ELM327 adapter");
+}
+
 void FakeELM327::OnSetProtocol(const std::string& arg, Parameter param) {
   (void)arg;
   (void)param;
+  SendReply(MESSAGE_OK);
 }
 
 void FakeELM327::OnInfo(const std::string& arg, Parameter param) {
